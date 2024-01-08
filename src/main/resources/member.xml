@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gudi.bookFlix.memberMapper">
+	<select id="memberList" parameterType="java.util.HashMap" resultType="map">
+		SELECT m_id, m_email, m_name, m_nickname, m_phone
+		  FROM member
+	</select>
+
+	<select id="getInfo" parameterType="java.util.HashMap" resultType="map">
+		SELECT m_id, m_email, m_name, m_nickname, m_phone, oauth
+		  FROM member
+		 WHERE m_id = #{m_id}
+	</select>
+
+	<select id="loginCheck" parameterType="map" resultType="map">
+		SELECT m_id, m_name, m_email, m_nickname, m_admin, m_phone, oauth
+		  FROM member
+		 WHERE m_email = #{m_email}
+		   AND m_pw = #{m_pw}
+	</select>
+
+	<select id="checkNickname" parameterType="map" resultType="java.lang.Integer">
+		SELECT count(*)
+		  FROM member
+		 WHERE m_nickname=#{m_nickname}
+	</select>
+
+	<select id="checkEmail" parameterType="map" resultType="java.lang.Integer">
+		SELECT count(*)
+		  FROM member
+		 WHERE m_email=#{m_email}
+	</select>
+
+	<select id="checkPassword" parameterType="map" resultType="java.lang.Integer">
+		SELECT count(*)
+		FROM member
+		WHERE m_id=#{m_id}
+		  AND m_pw=#{m_pw}
+	</select>
+
+	<insert id="memberInsert" parameterType="map">
+		INSERT INTO member(m_email, m_pw, m_name, m_nickname, m_birth, m_phone, salt, oauth)
+		     VALUES (#{m_email}, #{m_pw}, #{m_name}, #{m_nickname}, #{m_birth}, #{m_phone}, #{salt}, #{oauth})
+	</insert>
+
+	<update id="updateMember" parameterType="map">
+		UPDATE member
+		<set>
+			<if test="m_nickname != null">
+				m_nickname = #{m_nickname},
+			</if>
+			<if test="m_phone != null">
+				m_phone = #{m_phone},
+			</if>
+			<if test="m_pw != null">
+				m_pw = #{m_pw},
+			</if>
+		</set>
+		WHERE m_id = #{m_id}
+	</update>
+
+	<delete id="memberDelete" parameterType="map">
+		DELETE FROM member
+		<where>
+			<if test="m_id != null">
+				m_id = #{m_id}
+			</if>
+		</where>
+	</delete>
+
+	<select id="findEmail" parameterType="map" resultType="map">
+		SELECT m_email
+		  FROM member
+		 WHERE m_name = #{m_name}
+		   AND m_nickname = #{m_nickname}
+		   AND m_birth= #{m_birth}
+	</select>
+
+	<update id="updatePassword" parameterType="map">
+		UPDATE member SET m_pw = #{m_pw}
+		 WHERE m_email = #{m_email}
+		   AND m_nickname = #{m_nickname}
+		   AND m_birth = #{m_birth}
+	</update>
+
+	<select id="getId" parameterType="map" resultType="map">
+		SELECT m_id FROM member
+		 WHERE m_email = #{m_email}
+		   AND m_nickname = #{m_nickname}
+		   AND m_birth = #{m_birth}
+	</select>
+
+	<select id="getName" parameterType="map" resultType="String">
+		SELECT m_name FROM member
+		 WHERE m_email = #{m_email}
+	</select>
+
+	<select id="getUserName" parameterType="com.gudi.bookFlix.vo.MemberVO" resultType="com.gudi.bookFlix.vo.MemberVO">
+		SELECT m_name FROM member
+		WHERE m_name = #{m_name}
+	</select>
+</mapper>

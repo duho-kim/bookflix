@@ -1,0 +1,157 @@
+@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+*{
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+.user-name{
+    color:#00a7ff;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.outer-container.py-4 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px; /* 컨테이너 너비 + 테두리 너비 */
+    height: 460px; /* 컨테이너 높이 + 테두리 높이 */
+    padding: 2px; /* 두 테두리 사이의 간격 */
+    background-color: white;
+    border: 3px solid #D3D3D3; /* 외부 테두리 */
+}
+
+.container.py-4 {
+    position: absolute; /* 또는 fixed로 설정해도 됩니다 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 690px;
+    height: 450px;
+    border: 1px solid #D3D3D3; /* 내부 테두리 */
+    background-color: white;
+    padding: 40px; /* 카드의 안쪽 여백 */
+    border-radius: 2px; /* 모서리를 둥글게 */
+    overflow: hidden; /* 내부 요소가 컨테이너를 넘어가지 않게 함 */
+}
+.signup-ment{
+    margin-top: 200px;
+    color: white;
+    font-size: 30px;
+}
+
+.logo{
+    width: 30%;
+    height: auto;
+}
+.content {
+    margin-top: 60px;
+    text-align: center;
+}
+
+.title {
+    color: #535353;
+    font-size: 24px;
+    font-weight: bolder ;
+}
+
+.description {
+    color: #535353;
+    font-size: 16px;
+    line-height: 1;
+    margin-top: 60px;
+    margin-bottom: 80px; /* 설명과 버튼 사이의 간격을 더 늘림 */
+}
+
+.footer {
+    display: flex;
+    bottom: 30px; /* 하단에 더 많은 공간 둠 */
+    width: 100%;
+    justify-content: center; /* 가로축 중앙 정렬 */
+    text-align: center;
+    gap: 20px;
+}
+
+.login-btn {
+    margin-bottom: 30px;
+    background-color: #2679ff;
+    color: #FFFFFF;
+    padding: 12px 30px; /* 버튼 패딩 조정 */
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px; /* 글자 크기 조정 */
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.login-btn:hover {
+    background-color: #7fb0ff;
+    color: #FFFFFF;
+}
+
+.main-btn {
+    border: 1px solid #2679ff;
+    margin-bottom: 30px;
+    background-color: #FFFFFF;
+    color: #2679ff;
+    padding: 12px 30px; /* 버튼 패딩 조정 */
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px; /* 글자 크기 조정 */
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.main-btn:hover {
+    border: 1px solid #7fb0ff;
+    background-color: #7fb0ff;
+    color: #FFFFFF;
+}
+
+.common-btn {
+    margin-bottom: 30px;
+    padding: 12px 30px; /* 버튼 패딩 조정 */
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px; /* 글자 크기 조정 */
+    min-width: 150px; /* 버튼의 최소 너비 설정 */
+    text-align: center; /* 글자를 중앙 정렬 */
+    transition: background-color 0.3s, color 0.3s;
+    display: inline-block; /* 버튼을 인라인 블록 요소로 설정 */
+}
+
+@media (max-width: 768px) {
+    .outer-container.py-4 {
+        width: 90%; /* 화면 너비의 90%로 설정 */
+        height: auto; /* 높이를 자동으로 설정 */
+    }
+
+    .container.py-4 {
+        width: 100%; /* 부모 컨테이너의 너비와 일치 */
+        height: auto; /* 높이를 자동으로 설정 */
+        padding: 20px; /* 패딩을 조정 */
+    }
+
+    .content {
+        margin-top: 30px; /* 마진을 조정 */
+    }
+
+    .title {
+        font-size: 20px; /* 글자 크기를 조정 */
+    }
+
+    .description {
+        font-size: 14px; /* 글자 크기를 조정 */
+        margin-bottom: 60px; /* 마진을 조정 */
+    }
+
+    .footer {
+        flex-direction: column; /* 버튼을 세로로 배치 */
+        align-items: center; /* 세로축 중앙 정렬 */
+    }
+
+    .common-btn {
+        min-width: 120px; /* 버튼의 최소 너비를 조정 */
+    }
+}
