@@ -59,7 +59,7 @@
         </div>
 
         <div class="media-options">
-            <a href="#" class="field google">
+            <a href="/auth/google/login" class="field google">
                 <img src="/resources/img/google-logo.png" alt="Login with google" class="google-img">
                 <span>Login with Google</span>
             </a>

@@ -1,8 +1,9 @@
 /**
- * 카카오 로그인을 관리하는 컨트롤러
- * 카카오 API를 통해 OAuth 인증을 수행하고 사용자 정보를 가져옴
+ * 카카오, 구글 소셜 로그인을 관리하는 컨트롤러
+ * 카카오, 구글 API를 통해 OAuth 인증을 수행하고 사용자 정보를 가져옴
  * 작성자 : 김두호
  * 최초 작성일 : 2023-08-12
+ * 최종 수정일 : 2024-01-09
  */
 
 package com.gudi.bookFlix.controller;
@@ -13,31 +14,32 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gudi.bookFlix.logic.AuthLogic;
 import com.gudi.bookFlix.logic.MemberLogic;
-import com.gudi.bookFlix.vo.AuthVO;
-import com.gudi.bookFlix.vo.KakaoProfile;
-import com.gudi.bookFlix.vo.MemberVO;
+import com.gudi.bookFlix.vo.*;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 
 @Controller
+@RequiredArgsConstructor
 @RequestMapping("/auth/*")
 public class AuthController {
     Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -47,19 +49,18 @@ public class AuthController {
     @Autowired
     private MemberLogic memberLogic = null;
 
-
     /**
      * 카카오 OAuth 인증 후 콜백 메소드
      * 카카오에서 제공한 코드를 사용하여 액세스 토큰을 요청하고,
      * 해당 토큰을 사용하여 사용자의 프로필 정보를 가져옴
-     * @param code 카카오 인증 서버로부터 받은 인증 코드
+     *
+     * @param code    카카오 인증 서버로부터 받은 인증 코드
      * @param session 현재 사용자의 세션
-     * @param rab 리다이렉트 시 메시지를 전달하는 데 사용
+     * @param rab     리다이렉트 시 메시지를 전달하는 데 사용
      * @return 로그인 성공 또는 실패에 따라 적절한 페이지로 리다이렉트
      */
     @GetMapping("/kakao/callback")
-    public String kakaoCallback(String code, HttpSession session, RedirectAttributes rab){
-        //post방식으로 key=value 데이터 요청(카카오쪽으로)
+    public String kakaoCallback(String code, HttpSession session, RedirectAttributes rab) {
         RestTemplate rt = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -67,8 +68,8 @@ public class AuthController {
 
         // 카카오 토큰 요청에 필요한 파라미터 설정
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type","authorization_code");
-        params.add("client_id","8918d4c80ecdff016de9769242b13044");
+        params.add("grant_type", "authorization_code");
+        params.add("client_id", "8918d4c80ecdff016de9769242b13044");
         params.add("redirect_uri", "http://localhost:8000/auth/kakao/callback");
         params.add("code", code);
 
@@ -87,11 +88,11 @@ public class AuthController {
         // ObjectMapper를 사용하여 응답 JSON을 AuthVO 객체로 변환
         ObjectMapper objectMapper = new ObjectMapper();
         AuthVO authVO = null;
-        try{
+        try {
             authVO = objectMapper.readValue(response.getBody(), AuthVO.class);
-        } catch (JsonMappingException e){
+        } catch (JsonMappingException e) {
             e.printStackTrace();
-        } catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
 
@@ -100,7 +101,7 @@ public class AuthController {
         RestTemplate rt_ = new RestTemplate();
 
         HttpHeaders headers_ = new HttpHeaders();
-        headers_.add("Authorization","Bearer " + authVO.getAccess_token());
+        headers_.add("Authorization", "Bearer " + authVO.getAccess_token());
         headers_.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
         // 프로필 요청을 위한 HttpEntity
@@ -122,15 +123,15 @@ public class AuthController {
         objectMapper_.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         KakaoProfile kakaoProfile = null;
 
-        try{
+        try {
             String responseBody = response_.getBody();
-            System.out.println("응답 본문: " + responseBody);
-            System.out.println("이건 어때 : "+ objectMapper_.readValue(response_.getBody(), KakaoProfile.class));
+            //System.out.println("응답 본문: " + responseBody);
+            //System.out.println("이건 어때 : " + objectMapper_.readValue(response_.getBody(), KakaoProfile.class));
             kakaoProfile = objectMapper_.readValue(response_.getBody(), KakaoProfile.class);
-            System.out.println("카카오프로필이다 : "+kakaoProfile);
-        } catch (JsonMappingException e){
+            //System.out.println("카카오프로필이다 : " + kakaoProfile);
+        } catch (JsonMappingException e) {
             e.printStackTrace();
-        } catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
 
@@ -156,12 +157,12 @@ public class AuthController {
         MemberVO originUser = memberLogic.getName(kakaoUser.getM_name());
 
         // DB에 회원 정보가 없는 경우, 새 회원으로 등록
-        if(originUser == null || originUser.getM_name() == null){
+        if (originUser == null || originUser.getM_name() == null) {
             memberLogic.memberInsert(kmap);
         }
 
         // 로그인 체크를 수행하고 결과를 Map 객체로 받음
-        Map<String, Object> user =  null;
+        Map<String, Object> user = null;
         user = memberLogic.loginCheck(kmap);
 
         // 로그인 성공 시, 세션에 사용자 정보 설정
@@ -173,7 +174,7 @@ public class AuthController {
             session.setAttribute("m_email", user.get("m_email").toString());
             session.setAttribute("m_admin", user.get("m_admin").toString());
             session.setAttribute("m_nickname", user.get("m_nickname").toString());
-            if(user.get("m_phone") != null) {
+            if (user.get("m_phone") != null) {
                 session.setAttribute("m_phone", user.get("m_phone").toString());
             }
             return "redirect:/book/main"; // 로그인 성공 페이지로 리다이렉트
@@ -184,7 +185,109 @@ public class AuthController {
         }
     }
 
-    // 카카오 로그인을 수행할 때 사용되는 비밀번호 키
+    @Value("${google.client.id}")
+    private String googleClientId;
+    @Value("${google.client.pw}")
+    private String googleClientPw;
+
+    // Google 로그인을 위한 URL을 생성하고, 사용자를 Google 로그인 페이지로 리다이렉트하는 메서드
+    @GetMapping(value = "/google/login")
+    public void loginUrlGoogle(HttpServletResponse response) {
+        String reqUrl = "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + googleClientId
+                + "&redirect_uri=http://localhost:8000/auth/google/callback&response_type=code&scope=email%20profile%20openid&access_type=offline";
+        try {
+            // 구글 로그인 페이지로 리다이렉트
+            response.sendRedirect(reqUrl);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Google OAuth 인증 후 콜백 메소드
+     * Google에서 제공한 코드를 사용하여 액세스 토큰을 요청하고 해당 토큰을 사용하여 사용자의 프로필 정보를 가져옴
+     * 사용자가 새로운 사용자일 경우 회원 정보를 등록하고, 기존 사용자일 경우 로그인 처리를 수행
+     * 로그인 성공 시 사용자 정보를 세션에 저장하고 메인 페이지로 리다이렉트
+     *
+     * @param authCode Google 인증 서버로부터 받은 인증 코드
+     * @param session 현재 사용자의 세션
+     * @param rab 리다이렉트 시 메시지를 전달하는 데 사용
+     * @return 로그인 성공 또는 실패에 따라 적절한 페이지로 리다이렉트
+     */
+    @GetMapping(value="/google/callback")
+    public String loginGoogle(@RequestParam(value = "code") String authCode, HttpSession session, RedirectAttributes rab){
+        RestTemplate restTemplate = new RestTemplate();
+
+        // Google OAuth 인증을 위한 요청 파라미터 설정
+        GoogleRequest googleOAuthRequestParam = GoogleRequest
+                .builder()
+                .clientId(googleClientId)
+                .clientSecret(googleClientPw)
+                .code(authCode)
+                .redirectUri("http://localhost:8000/auth/google/callback")
+                .grantType("authorization_code").build();
+
+        // Google OAuth 서버에 토큰 요청을 보내고 응답받기
+        ResponseEntity<GoogleResponse> resultEntity = restTemplate.postForEntity("https://oauth2.googleapis.com/token",
+                googleOAuthRequestParam, GoogleResponse.class);
+        String jwtToken=resultEntity.getBody().getId_token();
+
+        Map<String, String> map=new HashMap<>();
+        map.put("id_token",jwtToken);
+
+        // 사용자 정보를 조회
+        ResponseEntity<GoogleInfResponse> resultEntity2 = restTemplate.postForEntity("https://oauth2.googleapis.com/tokeninfo",
+                map, GoogleInfResponse.class);
+        String email = resultEntity2.getBody().getEmail();
+        String name = resultEntity2.getBody().getName();
+
+        // DB에서 회원 정보 조회
+        Map<String, Object> googleEmail = new HashMap<>();
+        googleEmail.put("m_email", email);
+
+        Map<String, Object> userInfo = memberLogic.getInfo(googleEmail);
+
+        Map<String, Object> gmap = new HashMap<>();
+        gmap.put("m_name", name);
+        gmap.put("m_pw", cosKey);
+        gmap.put("m_email", email);
+        gmap.put("m_nickname", name);
+        gmap.put("oauth", "google");
+
+        // 새 회원 등록 또는 기존 회원 로그인 처리
+        if (userInfo == null || userInfo.isEmpty()) {
+            // 새 회원 등록
+            memberLogic.memberInsert(gmap);
+            userInfo = gmap; // 새로 등록된 사용자 정보를 userInfo에 할당
+        }
+
+        // 로그인 체크를 수행하고 결과를 Map 객체로 받음
+        Map<String, Object> user = null;
+        user = memberLogic.loginCheck(gmap);
+
+        // 로그인 성공 시, 세션에 사용자 정보 설정
+        if (user != null && !user.isEmpty()) {
+            // 로그인 성공
+            session.setAttribute("member", user.toString());
+            session.setAttribute("m_name", user.get("m_name").toString());
+            session.setAttribute("m_id", user.get("m_id").toString());
+            session.setAttribute("m_email", user.get("m_email").toString());
+            session.setAttribute("m_admin", user.get("m_admin").toString());
+            session.setAttribute("m_nickname", user.get("m_nickname").toString());
+            if (user.get("m_phone") != null) {
+                session.setAttribute("m_phone", user.get("m_phone").toString());
+            }
+            return "redirect:/book/main"; // 로그인 성공 페이지로 리다이렉트
+        } else {
+            // 로그인 실패 시, 오류 메시지 설정 및 로그인 폼 페이지로 리다이렉트
+            rab.addFlashAttribute("errorMessageLogin", "로그인 실패!");
+            return "redirect:login";
+        }
+    }
+
+    // 자동 로그인 시 사용되는 키
+    // 개인정보 수정할 경우 비밀번호 재입력을 해야해서 필요하지만,
+    // 사용자는 알수가 없으므로 개선이 필요한 부분
     @Value("${cos.key}")
     private String cosKey;
 }
