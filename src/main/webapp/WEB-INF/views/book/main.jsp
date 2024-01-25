@@ -1,25 +1,17 @@
+<%@ page import="java.util.Map, java.util.List" %>
 <%@ page language="java"	contentType="text/html;charset=UTF-8"	pageEncoding="UTF-8"%>
 <%
-    String user = null;
-    String nickname = null;
-    String name = null;
-    String email = null;
-    String admin = null;
-    if (session.getAttribute("m_id") != null) {
-        user = (String)session.getAttribute("m_id");
-    }
-    if (session.getAttribute("m_nickname") != null) {
-        nickname = (String)session.getAttribute("m_nickname");
-    }
-    if (session.getAttribute("m_name") != null) {
-        name = (String)session.getAttribute("m_name");
-    }
-    if (session.getAttribute("m_email") != null) {
-        email = (String)session.getAttribute("m_email");
-    }
-    if (session.getAttribute("m_admin") != null) {
-        admin = (String)session.getAttribute("m_admin");
-    }
+    String mainPage = (String)request.getParameter("page");
+    int size = 0;//지변이니까 초기화를 생략하면 에러발생함.
+    List<Map<String,Object>> bList = (List<Map<String,Object>>)request.getAttribute("bList");
+    List<Map<String,Object>> bListDate = (List<Map<String,Object>>)request.getAttribute("bListDate");
+
+//    if(bList !=null){
+//        size = bList.size();
+//    }
+//    for (int i = 0; i < size; i++) {
+//        out.print(bList.get(i));
+//    }
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -37,7 +29,17 @@
     <title>BOOKFLIX</title>
 </head>
 <body>
+
+
 <%
+    String user = null;
+    String nickname = null;
+    if (session.getAttribute("m_id") != null) {
+        user = (String)session.getAttribute("m_id");
+    }
+    if (session.getAttribute("m_nickname") != null) {
+        nickname = (String)session.getAttribute("m_nickname");
+    }
     if (user != null) { // 로그인 한 경우
 %>
     <%@include file="../common/mainHeader.jsp"%>
@@ -53,9 +55,9 @@
     <h2 style="color:#464646;">모바일에서도 편하게 작품들을 관람하세요.</h2>
     <h3 style="color:#464646;">독서할 준비가 되셨나요? 이메일 주소 하나면 충분합니다.</h3>
     <div class="email">
-        <form action="/member/signUp" method="GET">
+        <form id="emailForm">
             <input type="email" id="email" name="m_email" placeholder="이메일 주소" style="padding: 10px; width: 300px;">
-            <button type="submit" style="display: inline-block; padding: 10px 20px; background-color: #2679ff; color: #ffffff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;">시작하기</button>
+            <button id="submitButton" type="button" style="display: inline-block; padding: 10px 20px; background-color: #2679ff; color: #ffffff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;">시작하기</button>
         </form>
     </div>
 </div>
@@ -78,13 +80,23 @@
 <div class="container">
     <div style="padding-top: 15px;">
         <ul class="a-hover">
-            <li><a href="#">전체보기</a></li>
-            <li><a href="#">로맨스</a></li>
-            <li><a href="#">액션</a></li>
-            <li><a href="#">드라마</a></li>
-            <li><a href="#">판타지</a></li>
-            <li><a href="#">학원</a></li>
-            <li><a href="#">무협</a></li>
+            <% if("novel".equals(mainPage)){ %>
+            <li><a href="/book/main?page=novel">전체보기</a></li>
+            <li><a href="/book/main?page=novel&b_genre=인문">인문</a></li>
+            <li><a href="/book/main?page=novel&b_genre=스릴러">스릴러</a></li>
+            <li><a href="/book/main?page=novel&b_genre=로맨스">로맨스</a></li>
+<%--            <li><a href="#">일상</a></li>--%>
+<%--            <li><a href="#">학원</a></li>--%>
+<%--            <li><a href="#">판타지</a></li>--%>
+            <% }else{ %>
+            <li><a href="/book/main/">전체보기</a></li>
+            <li><a href="/book/main?b_genre=로맨스">로맨스</a></li>
+            <li><a href="/book/main?b_genre=드라마">드라마</a></li>
+            <li><a href="/book/main?b_genre=일상">일상</a></li>
+            <li><a href="/book/main?b_genre=학원">학원</a></li>
+            <li><a href="/book/main?b_genre=스릴러">스릴러</a></li>
+            <li><a href="/book/main?b_genre=판타지">판타지</a></li>
+            <% } %>
         </ul>
     </div>
     <div style="height: 20px"><!--공간주기--></div>
@@ -93,101 +105,111 @@
     <%@include file="monthlyRank.jsp"%>
     <div style="height: 20px"><!--공간주기--></div>
 <% } %>
-<%-------------------------------------- 월간랭킹 login ----------------------------------%>
+<%-------------------------------------- 월간랭킹 login 끝----------------------------------%>
+<%--자바변수 mainPage에 들어있는 거 : request.getParameter("page")
+            /book/main -> 디폴트(null)- 만화목록
+            /book/main?page=novel일 때 소설목록 조회 됨--%>
+    <%if(mainPage==null){%>
     <div class="row row-container">
-        <h4 style="color: #606060;">최신 작품</h4>
+        <h4 style="color: #606060; margin-left: 40px">최신 작품</h4>
+<%------------------------- 장르버튼 눌렀을 때 조회 결과가 인덱스 4보다 짧아서 터져서 만든 구간--------------------%>
+        <%
+            if(bListDate.size()<4){
+                for (int i = 0; i < bListDate.size(); i++) {
+                    Map<String, Object> rmap = bListDate.get(i);
+                    %>
         <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test1.png" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
+            <div class="card" style="width: 15rem; height: 28rem;">
+                <a href="/book/detail?b_no=<%=rmap.get("b_no")%>">
+                    <img src=<%=rmap.get("b_thumbnail")%> class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
+                </a>
                 <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
+                    <h5 class="card-title"><a href="/book/detail?b_no=<%=rmap.get("b_no")%>"><%=rmap.get("b_title")%></a></h5>
+                    <h6 class="card-subtitle"><%=rmap.get("b_author")%></h6>
+                    <p class="card-text"><%=rmap.get("b_descript")%></p>
                 </div>
             </div>
         </div>
+<%------------------------- 장르버튼 눌렀을 때 조회 결과가 인덱스 4보다 짧아서 터져서 만든 구간 끝--------------------%>
+              <%
+            }}else{
+            for (int i = 0; i < 4; i++) {
+                Map<String, Object> rmap = bListDate.get(i);
+        %><%--스크롤 길어져서 결과값 4개만 보려고 인덱스 상수 4로 고정 함--%>
         <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test2.jpg" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
+            <div class="card" style="width: 15rem; height: 28rem;">
+                    <a href="/book/detail?b_no=<%=rmap.get("b_no")%>"><img src=<%=rmap.get("b_thumbnail")%> class="card-img-top" alt="..." style="height: 250px; object-fit: cover;"></a>
                 <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
+                    <h5 class="card-title"><a href="/book/detail?b_no=<%=rmap.get("b_no")%>"><%=rmap.get("b_title")%></a></h5>
+                    <h6 class="card-subtitle"><%=rmap.get("b_author")%></h6>
+                    <p class="card-text"><%=rmap.get("b_descript")%></p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test1.png" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test1.png" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
-                </div>
-            </div>
-        </div>
+        <%}}%>
     </div>
     <div class="row row-container">
-        <h4 style="color: #606060;">전체 작품</h4>
+        <h4 style="color: #606060; margin-left: 40px;">전체 작품</h4>
+        <% for (int i = 0; i < bList.size(); i++) {
+            Map<String,Object> rmap = bList.get(i);
+        %>
         <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test1.png" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
+            <div class="card" style="width: 15rem; height: 28rem;">
+                <a href="/book/detail?b_no=<%=rmap.get("b_no")%>">
+                    <img src=<%=rmap.get("b_thumbnail")%> class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
+                </a>
                 <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
+                    <h5 class="card-title"><a href="/book/detail?b_no=<%=rmap.get("b_no")%>"><%=rmap.get("b_title")%></a></h5>
+                    <h6 class="card-subtitle"><%=rmap.get("b_author")%></h6>
+                    <p class="card-text"><%=rmap.get("b_descript")%></p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test1.png" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test1.png" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-5">
-            <div class="card" style="width: 15rem;">
-                <img src="/resources/img/thumbnail_test1.png" class="card-img-top" alt="..." style="height: 250px; object-fit: cover;">
-                <div class="card-body">
-                    <h5 class="card-title">호두</h5>
-                    <h6 class="card-subtitle">작가</h6>
-                    <p class="card-text">나이 5살, 개껌을 좋아하는 강아지 매우 건방지다.</p>
-                </div>
-            </div>
-        </div>
+        <%}%>
+        <%}else if("novel".equals(mainPage)){%>
+        <%@include file="mainNovel.jsp"%>
+        <%}%>
     </div>
 </div>
-<a href="/notice/noticeMain">고객센터</a><br>
-<a href="/qna/qnaList">QnA게시판</a>
+<%@include file="../common/footer.jsp"%>
+<script>
 
+document.getElementById('submitButton').addEventListener('click', function(event) {
+    // 사용자가 입력한 이메일 값을 가져옴
+    const email = document.getElementById('email').value;
 
+    // 이메일 값을 쿠키에 저장
+    // 쿠키의 유효 시간 10분으로 설정
+    document.cookie = "m_email=" + encodeURIComponent(email) + "; max-age=600; path=/";
+
+    // 회원가입 페이지로 이동
+    window.location.href = "/member/signUp";
+});
+
+    // 페이지가 로드될 때 이전 스크롤 위치로 이동
+window.onload = function() {
+    if (sessionStorage.getItem('scrollPosition')) {
+        window.scrollTo(0, sessionStorage.getItem('scrollPosition'));
+    }
+}
+
+// 링크 클릭 시 현재 스크롤 위치를 저장
+document.querySelectorAll('a').forEach(function(link) {
+    link.addEventListener('click', function() {
+        sessionStorage.setItem('scrollPosition', window.scrollY);
+    });
+});
+
+// // 사용자가 페이지를 스크롤할 때마다 스크롤 위치를 저장 (옵션)
+// window.onscroll = function() {
+//     sessionStorage.setItem('scrollPosition', window.scrollY);
+// }
+</script>
 <script src="/resources/js/scroll.js"></script>
+
 <!-- Bootstrap core JavaScript -->
 <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

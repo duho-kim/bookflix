@@ -220,7 +220,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
             alert('모든 필드가 올바르게 입력되지 않았습니다.');
         }
     });
-    
+
+    // 쿠키에서 이메일 값을 가져와서 입력란에 삽입
+    const emailCookie = decodeURIComponent(document.cookie.replace
+                                            (/(?:(?:^|.*;\s*)m_email\s*\=\s*([^;]*).*$)|^.*$/, "$1"));
+    if (emailCookie) {
+        inputEmail.value = emailCookie;
+        validateEmail(inputEmail); // 이메일 유효성 검사 실행
+    }
+
     inputEmail.addEventListener('input', () => validateEmail(inputEmail));
     inputPassword.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', checkPasswordMatch);
