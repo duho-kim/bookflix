@@ -24,12 +24,12 @@
 						<label for="inputEmail" class="form-label mt-4 bold">이메일 <span class="star">*</span></label>
 						<div class="input-group">
 							<input type="text" class="form-control" id="inputEmail" name="m_email" aria-describedby="emailHelp" placeholder="이메일을 입력해주세요">
-							<button class="btn btn-email" type="button" id="checkEmailBtn" onclick="checkEmailFunction()" disabled>이메일 전송</button>
+							<button class="btn btn-email" type="button" id="checkEmailBtn" onclick="checkEmail()" disabled>이메일 전송</button>
 						</div>
 						<div class="invalid-feedback" id="invalid-feedback-email">이메일 형식이 잘못되었습니다.</div>
 						<div class="input-code mt-4 input-group" id="input-code" hidden>
 							<input type="text" class="form-control" id="inputCode" placeholder="코드를 입력해주세요." maxlength="10">
-							<button class="btn btn-email" type="button" id="checkCodeBtn" onclick="checkCodeFunction()">인증번호 확인</button>
+							<button class="btn btn-email" type="button" id="checkCodeBtn" onclick="checkCode()">인증번호 확인</button>
 						</div>
 					</div>
                 <div class="form-group">
@@ -126,70 +126,6 @@
         </div>
     </section>
 <script src="/resources/js/signUp.js"></script>
-<script>
-	const checkEmailFunction=()=> {
-		const inputEmail = document.getElementById('inputEmail');
-		const email = inputEmail.value;
-		console.log(email);
-		fetch('/member/checkEmail', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				m_email: email,
-			}),
-		})
-				.then(response => response.json())
-				.then(data => {
-					if (data.status === 'sendEmail') {
-						alert("본인확인 인증 이메일이 전송되었습니다.");
-						// 추가적인 처리 (버튼 비활성화, 피드백 메시지 표시 등)
-						document.getElementById('checkEmailBtn').disabled = true;
-						document.getElementById('inputEmail').readOnly = true;
-						document.getElementById('input-code').hidden = false;
-					}
-					else if (data.status === 'exist'){
-						alert("동일한 이메일이 존재합니다.\n\n다른 이메일을 사용해주세요.");
-						// 실패 시 추가 처리
-						document.getElementById('inputEmail').value = '';
-					}
-				})
-				.catch((error) => {
-					console.error('Error:', error);
-					alert("서버와의 통신 중 오류가 발생했습니다.\n\n나중에 다시 시도해주세요.");
-				});
-	}
-
-	let checkCodeBtn = false;
-	const checkCodeFunction = () => {
-		const inputCode = document.getElementById('inputCode').value;
-
-		fetch('/member/checkCode', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				code: inputCode,
-			}),
-		})
-				.then(response => response.json())
-				.then(data => {
-					if (data.success) {
-						alert("본인확인이 성공적으로 완료되었습니다.\n\n회원가입을 계속 진행해주세요.");
-						document.getElementById('input-code').hidden = true;
-						checkCodeBtn = true;
-					} else {
-						alert("입력한 코드가 올바르지 않습니다.");
-					}
-				})
-				.catch((error) => {
-					console.error('Error:', error);
-					alert("서버와의 통신 중 오류가 발생했습니다.\n\n나중에 다시 시도해주세요.");
-				});
-	};
-</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
 		integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
 </body>

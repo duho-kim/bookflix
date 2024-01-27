@@ -55,9 +55,11 @@
     <h2 style="color:#464646;">모바일에서도 편하게 작품들을 관람하세요.</h2>
     <h3 style="color:#464646;">독서할 준비가 되셨나요? 이메일 주소 하나면 충분합니다.</h3>
     <div class="email">
-        <form id="emailForm">
+        <form action="/member/signUp" method="GET">
+            <!--보안상의 안전을 위해서 GET을 POST로 바꿔야함 -->
+
             <input type="email" id="email" name="m_email" placeholder="이메일 주소" style="padding: 10px; width: 300px;">
-            <button id="submitButton" type="button" style="display: inline-block; padding: 10px 20px; background-color: #2679ff; color: #ffffff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;">시작하기</button>
+            <button type="submit" style="display: inline-block; padding: 10px 20px; background-color: #2679ff; color: #ffffff; text-decoration: none; border-radius: 4px; border: none; cursor: pointer;">시작하기</button>
         </form>
     </div>
 </div>
@@ -173,19 +175,6 @@
 </div>
 <%@include file="../common/footer.jsp"%>
 <script>
-
-document.getElementById('submitButton').addEventListener('click', function(event) {
-    // 사용자가 입력한 이메일 값을 가져옴
-    const email = document.getElementById('email').value;
-
-    // 이메일 값을 쿠키에 저장
-    // 쿠키의 유효 시간 10분으로 설정
-    document.cookie = "m_email=" + encodeURIComponent(email) + "; max-age=600; path=/";
-
-    // 회원가입 페이지로 이동
-    window.location.href = "/member/signUp";
-});
-
     // 페이지가 로드될 때 이전 스크롤 위치로 이동
 window.onload = function() {
     if (sessionStorage.getItem('scrollPosition')) {

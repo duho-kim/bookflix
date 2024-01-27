@@ -1,11 +1,93 @@
+let isPasswordValid = false;
+let isConfirmPasswordValid = false;
+let isNicknameValid = false;
+let isNameInput = false;
+let checkCodeBtn = false;
+const checkEmail=()=> {
+    const inputEmail = document.getElementById('inputEmail');
+    const email = inputEmail.value;
+    console.log(email);
+    fetch('/member/checkEmail', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            m_email: email,
+        }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'sendEmail') {
+                alert("본인확인 인증 이메일이 전송되었습니다.");
+                // 추가적인 처리 (버튼 비활성화, 피드백 메시지 표시 등)
+                document.getElementById('checkEmailBtn').disabled = true;
+                document.getElementById('inputEmail').readOnly = true;
+                document.getElementById('input-code').hidden = false;
+            }
+            else if (data.status === 'exist'){
+                alert("동일한 이메일이 존재합니다.\n\n다른 이메일을 사용해주세요.");
+                // 실패 시 추가 처리
+                document.getElementById('inputEmail').value = '';
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert("서버와의 통신 중 오류가 발생했습니다.\n\n나중에 다시 시도해주세요.");
+        });
+}
+
+const checkCode = () => {
+    const inputCode = document.getElementById('inputCode').value;
+
+    fetch('/member/checkCode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            code: inputCode,
+        }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("본인확인이 성공적으로 완료되었습니다.\n\n회원가입을 계속 진행해주세요.");
+                document.getElementById('input-code').hidden = true;
+                checkCodeBtn = true;
+                console.log(checkCodeBtn);
+            } else {
+                alert("입력한 코드가 올바르지 않습니다.");
+            }
+            updateSignupButton();
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert("서버와의 통신 중 오류가 발생했습니다.\n\n나중에 다시 시도해주세요.");
+        });
+};
+
+const updateSignupButton = () => {
+    const signupButton = document.getElementById('signup-button');
+    console.log("updateSignupButton 동작");
+
+    if (checkCodeBtn && isPasswordValid && isConfirmPasswordValid
+        && yy.value && mm.value && dd.value && isNameInput && isNicknameValid) {
+        signupButton.disabled = false;
+        console.log("signUpBtn 활성화")
+    } else {
+        signupButton.disabled = true;
+        console.log("signUpBtn 비활성화")
+        console.log("비밀번호: ", isPasswordValid ,"비밀번호재확인: ", isConfirmPasswordValid
+            ,"년: ", yy.value ,"월: ", mm.value ,"일: ", dd.value ,"코드체크: ", checkCodeBtn,"isNameInput:",isNameInput,"isNicknameValid", isNicknameValid)
+    }
+}
 window.addEventListener('DOMContentLoaded', (event) => {
-    // Get the password and confirm password fields
     const inputNickname = document.getElementById('inputNickname');
     const inputPassword = document.getElementById('inputPassword');
     const confirmPassword = document.getElementById('confirmPassword');
     const inputEmail = document.getElementById('inputEmail');
     const checkEmailBtn = document.getElementById('checkEmailBtn');
-    const signupButton = document.getElementById('signup-button');
     const invalidFeedbackPassword = document.getElementById('invalid-feedback-password');
     const invalidFeedbackEmail = document.getElementById('invalid-feedback-email');
     const invalidFeedbackNickname = document.getElementById('invalid-feedback-nickname');
@@ -15,10 +97,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
     const dd = document.getElementById('dd');
     const form = document.getElementById('signupForm');
 
-    let isEmailValid = false;
-    let isPasswordValid = false;
-    let isConfirmPasswordValid = false;
-
+    inputName.addEventListener('input', () => {
+        if (inputName.value === '') {
+            isNameInput = false;
+        } else {
+            isNameInput = true;
+        }
+        updateSignupButton();
+    });
     const checkPasswordMatch =()=> {
         const pw = inputPassword.value;
         const confirmPw = confirmPassword.value;
@@ -53,29 +139,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
         };
     }
 
-    const updateSignupButton = () => {
-        if (isEmailValid && isPasswordValid && isConfirmPasswordValid
-            && yy.value && mm.value && dd.value && checkCodeBtn) {
-            signupButton.disabled = false;
-        } else {
-            signupButton.disabled = true;
-        }
-    }
-
-    inputEmail.addEventListener('input', () => {
-        if (inputEmail.value) {
-            checkEmailBtn.disabled = false;
-            isEmailValid = true;
-        } else {
-            checkEmailBtn.disabled = true;
-            isEmailValid = false;
-        }
-    });
-
     const validateEmail = (inputEmail) => {
         const pattern = /^([0-9a-zA-Z_.-]+)@([0-9a-zA-Z_-]+)(\.[0-9a-zA-Z_-]+){1,2}$/;
         const email = inputEmail.value;
 
+        console.log("validateEmail 동작");
         if (email === "") {
             inputEmail.classList.remove('is-invalid');
             inputEmail.classList.remove('is-valid');
@@ -101,37 +169,45 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
     validateEmail(inputEmail);
 
+
     inputNickname.addEventListener('input', debounce(() => {
         if (inputNickname.value === '') {
             document.getElementById('invalid-feedback-nickname').style.display = 'none';
             document.getElementById('valid-feedback-nickname').style.display = 'none';
+            isNicknameValid = false;
+            updateSignupButton();
             return;
         }
-        // AJAX 요청보내기
-        fetch('/member/checkNickname', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                m_nickname: inputNickname.value,
-            }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.check) {
-                    validFeedbackNickname.style.display = 'none'; // 숨기기
-                    invalidFeedbackNickname.style.display = 'block'; // 보여주기
-                    inputNickname.setCustomValidity("닉네임을 다시 입력해주세요.");
-                } else {
-                    validFeedbackNickname.style.display = 'block'; // 보여주기
-                    invalidFeedbackNickname.style.display = 'none'; // 숨기기
-                    inputNickname.setCustomValidity("");
-                }
+        else {
+            // fetch 요청보내기
+            fetch('/member/checkNickname', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    m_nickname: inputNickname.value,
+                }),
             })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.check) {
+                        isNicknameValid = false;
+                        validFeedbackNickname.style.display = 'none'; // 숨기기
+                        invalidFeedbackNickname.style.display = 'block'; // 보여주기
+                        inputNickname.setCustomValidity("닉네임을 다시 입력해주세요.");
+                    } else {
+                        isNicknameValid = true;
+                        validFeedbackNickname.style.display = 'block'; // 보여주기
+                        invalidFeedbackNickname.style.display = 'none'; // 숨기기
+                        inputNickname.setCustomValidity("");
+                    }
+                    updateSignupButton();
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
     },500));
 
     const inputs = Array.from(document.querySelectorAll('input, select'));
@@ -215,20 +291,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
     form.addEventListener('submit', (e) => {
         // 폼 제출 이벤트를 처리
         // 모든 입력이 유효한지 확인한 후 제출을 진행하거나 중지할 수 있다
-        if (!isEmailValid || !isPasswordValid || !isConfirmPasswordValid) {
+        if (!checkCodeBtn || !isPasswordValid || !isConfirmPasswordValid
+            && !yy.value && !mm.value && !dd.value || !isNameInput || !isNicknameValid) {
             e.preventDefault(); // 폼 제출 중지
             alert('모든 필드가 올바르게 입력되지 않았습니다.');
         }
     });
-
-    // 쿠키에서 이메일 값을 가져와서 입력란에 삽입
-    const emailCookie = decodeURIComponent(document.cookie.replace
-                                            (/(?:(?:^|.*;\s*)m_email\s*\=\s*([^;]*).*$)|^.*$/, "$1"));
-    if (emailCookie) {
-        inputEmail.value = emailCookie;
-        validateEmail(inputEmail); // 이메일 유효성 검사 실행
-    }
-
+    
     inputEmail.addEventListener('input', () => validateEmail(inputEmail));
     inputPassword.addEventListener('input', validatePassword);
     confirmPassword.addEventListener('input', checkPasswordMatch);
