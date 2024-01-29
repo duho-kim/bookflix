@@ -153,37 +153,39 @@ public class AuthController {
         kmap.put("m_nickname", kakaoProfile.getProperties().getNickname());
         kmap.put("oauth", "kakao");
 
-        // DB에서 회원 이름으로 회원 정보 조회
-        MemberVO originUser = memberLogic.getName(kakaoUser.getM_name());
+        // DB에서 회원 이메일로 회원 정보 조회
+        Map<String, Object> userInfo = memberLogic.getInfo(kmap);
 
-        // DB에 회원 정보가 없는 경우, 새 회원으로 등록
-        if (originUser == null || originUser.getM_name() == null) {
-            memberLogic.memberInsert(kmap);
-        }
-
-        // 로그인 체크를 수행하고 결과를 Map 객체로 받음
-        Map<String, Object> user = null;
-        user = memberLogic.loginCheck(kmap);
-
-        // 로그인 성공 시, 세션에 사용자 정보 설정
-        if (user != null && !user.isEmpty()) {
-            // 로그인 성공
-            session.setAttribute("member", user.toString());
-            session.setAttribute("m_name", user.get("m_name").toString());
-            session.setAttribute("m_id", user.get("m_id").toString());
-            session.setAttribute("m_email", user.get("m_email").toString());
-            session.setAttribute("m_admin", user.get("m_admin").toString());
-            session.setAttribute("m_nickname", user.get("m_nickname").toString());
-            if (user.get("m_phone") != null) {
-                session.setAttribute("m_phone", user.get("m_phone").toString());
+        if (userInfo != null && !userInfo.isEmpty()) {
+            Object oauth = userInfo.get("oauth");
+            // 기존 회원 정보가 있는 경우
+            if (oauth != null && oauth.equals(kmap.get("oauth"))) {
+                // 동일한 소셜 로그인 방식일때
+                // 로그인 처리 로직
+                return processLogin(kmap, session, rab);
+            } else {
+                // 다른 소셜 로그인 방식이거나, 홈페이지 로그인일때 오류 메세지 출력
+                rab.addFlashAttribute("socialErrorMessage", "이미 등록되어 있는 이메일입니다.");
+                return "redirect:/member/login";
             }
-            return "redirect:/book/main"; // 로그인 성공 페이지로 리다이렉트
         } else {
-            // 로그인 실패 시, 오류 메시지 설정 및 로그인 폼 페이지로 리다이렉트
-            rab.addFlashAttribute("errorMessageLogin", "로그인 실패!");
-            return "redirect:login";
+            // 새 회원으로 DB에 등록
+            memberLogic.memberInsert(kmap);
+            // 로그인 처리 로직
+            return processLogin(kmap, session, rab);
         }
     }
+/*        if (userInfo != null && !userInfo.isEmpty()) {
+            // 이메일이 기존 회원과 중복됨
+            // 사용자에게 이미 등록된 이메일임을 알리고, 계정 연동 또는 다른 이메일 사용을 선택하게 함
+            rab.addFlashAttribute("socialErrorMessage", "이미 등록되어 있는 이메일입니다.");
+            return "redirect:/member/login"; // 로그인 페이지 또는 적절한 페이지로 리다이렉트
+        } else {
+            // 새 회원으로 DB에 등록
+            memberLogic.memberInsert(kmap);
+        }*/
+
+
 
     @Value("${google.client.id}")
     private String googleClientId;
@@ -254,16 +256,29 @@ public class AuthController {
         gmap.put("m_nickname", name);
         gmap.put("oauth", "google");
 
-        // 새 회원 등록 또는 기존 회원 로그인 처리
-        if (userInfo == null || userInfo.isEmpty()) {
-            // 새 회원 등록
+        if (userInfo != null && !userInfo.isEmpty()) {
+            Object oauth = userInfo.get("oauth");
+            // 기존 회원 정보가 있는 경우
+            if (oauth != null && oauth.equals(gmap.get("oauth"))) {
+                // 동일한 소셜 로그인 방식일때
+                // 로그인 처리 로직
+                return processLogin(gmap, session, rab);
+            } else {
+                // 다른 소셜 로그인 방식이거나, 홈페이지 로그인일때 오류 메세지 출력
+                rab.addFlashAttribute("socialErrorMessage", "이미 등록되어 있는 이메일입니다.");
+                return "redirect:/member/login";
+            }
+        } else {
+            // 새 회원으로 DB에 등록
             memberLogic.memberInsert(gmap);
-            userInfo = gmap; // 새로 등록된 사용자 정보를 userInfo에 할당
+            // 로그인 처리 로직
+            return processLogin(gmap, session, rab);
         }
+    }
 
-        // 로그인 체크를 수행하고 결과를 Map 객체로 받음
-        Map<String, Object> user = null;
-        user = memberLogic.loginCheck(gmap);
+    // 로그인 처리 메소드
+    private String processLogin(Map<String, Object> uMap, HttpSession session, RedirectAttributes rab) {
+        Map<String, Object> user = memberLogic.loginCheck(uMap);
 
         // 로그인 성공 시, 세션에 사용자 정보 설정
         if (user != null && !user.isEmpty()) {
@@ -281,7 +296,7 @@ public class AuthController {
         } else {
             // 로그인 실패 시, 오류 메시지 설정 및 로그인 폼 페이지로 리다이렉트
             rab.addFlashAttribute("errorMessageLogin", "로그인 실패!");
-            return "redirect:login";
+            return "redirect:/member/login";
         }
     }
 

@@ -323,15 +323,10 @@ public class MemberController {
      * @param model 뷰에 데이터를 전달하는 데 사용
      * @return 회원 가입 페이지 경로
      */
-/*    @GetMapping(value = "signUp")
+    @GetMapping(value = "signUp")
     public String test(@RequestParam Map<String, Object> pMap, Model model) {
         String insertEmail = (String) pMap.get("m_email");
         model.addAttribute("m_email", insertEmail);
-        return "member/signUp";
-    }*/
-
-    @GetMapping(value = "signUp")
-    public String test() {
         return "member/signUp";
     }
 

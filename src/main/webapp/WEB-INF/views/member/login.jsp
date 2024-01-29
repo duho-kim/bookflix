@@ -12,6 +12,15 @@
     <%@include file="/resources/cdn/common.html"%>
     <link rel="stylesheet" href="/resources/css/logIn.css">
     <script src="/resources/js/logIn.js"></script>
+
+    <script>
+        window.onload = function() {
+            const socialErrorMessage = "${socialErrorMessage}";
+            if (socialErrorMessage) {
+                alert(socialErrorMessage);
+            }
+        }
+    </script>
 </head>
 <body>
 <div>
