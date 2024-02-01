@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.gudi.bookFlix.vo.MemberVO;
+import com.gudi.bookFlix.util.Encrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class MemberLogic {
     Logger logger = LoggerFactory.getLogger(MemberLogic.class);
 
     @Autowired
-    ServletContext servletContext;
+    private ServletContext servletContext;
 
     @Autowired
     private JavaMailSender mailSender;
@@ -44,6 +45,8 @@ public class MemberLogic {
     @Autowired
     private MemberDao memberDao = null;
 
+    @Autowired
+    private Encrypt encrypt;
 
     /**
      * 사용자 목록을 데이터베이스에서 불러옴
@@ -64,6 +67,18 @@ public class MemberLogic {
      */
     public String memberInsert(Map<String, Object> pMap) {
         logger.info("memberInsert");
+
+        // pMap에서 비번 꺼내기
+        String pw = (String) pMap.get("m_pw");
+        // 암호화
+        String salt = encrypt.getSalt();
+        String encrypt_pw = encrypt.getEncrypt(pw, salt);
+
+        // 암호화된 비밀번호와 솔트를 pMap에 다시 저장
+        pMap.put("m_pw", encrypt_pw);
+        pMap.put("salt", salt);
+        pMap.put("oauth", "homepage");
+
         int result = -1;
         result = memberDao.memberInsert(pMap);
         logger.info(String.valueOf(result));
@@ -148,10 +163,22 @@ public class MemberLogic {
     //로그인시 이메일 비밀번호 체크
     public Map<String, Object> loginCheck(Map<String, Object> pMap) {
 		logger.info("login");
-		Map<String, Object> user = null;
-		user = memberDao.loginCheck(pMap);
-		
-		return user;
+        Map<String, Object> userInfo = null;
+        userInfo = getInfo(pMap);
+        // 사용자가 입력한 비밀번호
+        String insertPw = (String) pMap.get("m_pw");
+        // 데이터베이스에 저장되어 있는 솔트값
+        String userSalt = (String) userInfo.get("salt");
+        // 입력된 비밀번호와 저장된 솔트값을 합쳐서 암호화
+        String pw_salt = encrypt.getEncrypt(insertPw, userSalt);
+        // 데이터베이스에 저장되어있는 암호화 된 비밀번호
+        String userpw = (String) userInfo.get("m_pw");
+
+        if (pw_salt.equals(userpw)){
+            return userInfo;
+        } else {
+            return null;
+        }
 	}
 
     /**
@@ -301,7 +328,7 @@ public class MemberLogic {
             helper.setText(mvo.getMessage(), true);
             helper.setFrom("bookflix65@gmail.com", "북플릭스");
             helper.setReplyTo("bookflix65@gmail.com","북플릭스");
-            System.out.println("message: " + mimeMessage);
+            logger.info("message: " + mimeMessage);
             helper.addInline("logo", fds);
             mailSender.send(mimeMessage);
             logger.info("전송 완료!!!!!!!!!");
