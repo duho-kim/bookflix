@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gudi.bookFlix.logic.AuthLogic;
 import com.gudi.bookFlix.logic.MemberLogic;
+import com.gudi.bookFlix.util.Encrypt;
 import com.gudi.bookFlix.vo.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -49,6 +50,11 @@ public class AuthController {
     @Autowired
     private MemberLogic memberLogic = null;
 
+    @Autowired
+    private MemberController memberController = null;
+
+    @Autowired
+    private Encrypt encrypt = null;
     /**
      * 카카오 OAuth 인증 후 콜백 메소드
      * 카카오에서 제공한 코드를 사용하여 액세스 토큰을 요청하고,
@@ -61,7 +67,7 @@ public class AuthController {
      */
     @GetMapping("/kakao/callback")
     public String kakaoCallback(String code, HttpSession session, RedirectAttributes rab) {
-        RestTemplate rt = new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
@@ -76,7 +82,7 @@ public class AuthController {
         HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest = new HttpEntity<>(params, headers);
 
         // 카카오 토큰 발급 API 호출
-        ResponseEntity<String> response = rt.exchange(
+        ResponseEntity<String> response = restTemplate.exchange(
                 "https://kauth.kakao.com/oauth/token",
                 HttpMethod.POST,
                 kakaoTokenRequest,
@@ -98,25 +104,25 @@ public class AuthController {
 
         //객체로 저장한 토큰정보(access_token) 통해 사용자 프로필 요청
         // 사용자 프로필 정보를 요청하기 위한 RestTemplate
-        RestTemplate rt_ = new RestTemplate();
+        RestTemplate restTemplate2 = new RestTemplate();
 
-        HttpHeaders headers_ = new HttpHeaders();
-        headers_.add("Authorization", "Bearer " + authVO.getAccess_token());
-        headers_.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        HttpHeaders headers2 = new HttpHeaders();
+        headers2.add("Authorization", "Bearer " + authVO.getAccess_token());
+        headers2.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
         // 프로필 요청을 위한 HttpEntity
         HttpEntity<MultiValueMap<String, String>> kakaoProfileRequest =
-                new HttpEntity<>(headers_);
+                new HttpEntity<>(headers2);
 
         // 카카오 사용자 프로필 API 호출
-        ResponseEntity<String> response_ = rt_.exchange(
+        ResponseEntity<String> response2 = restTemplate2.exchange(
                 "https://kapi.kakao.com/v2/user/me",
                 HttpMethod.POST,
                 kakaoProfileRequest,
                 String.class
         );
 
-        System.out.println(response_.getBody());
+        System.out.println(response2.getBody());
 
         // ObjectMapper를 사용하여 응답 JSON을 KakaoProfile 객체로 변환
         ObjectMapper objectMapper_ = new ObjectMapper();
@@ -124,10 +130,10 @@ public class AuthController {
         KakaoProfile kakaoProfile = null;
 
         try {
-            String responseBody = response_.getBody();
+            String responseBody = response2.getBody();
             //System.out.println("응답 본문: " + responseBody);
-            //System.out.println("이건 어때 : " + objectMapper_.readValue(response_.getBody(), KakaoProfile.class));
-            kakaoProfile = objectMapper_.readValue(response_.getBody(), KakaoProfile.class);
+            //System.out.println("이건 어때 : " + objectMapper_.readValue(response2.getBody(), KakaoProfile.class));
+            kakaoProfile = objectMapper_.readValue(response2.getBody(), KakaoProfile.class);
             //System.out.println("카카오프로필이다 : " + kakaoProfile);
         } catch (JsonMappingException e) {
             e.printStackTrace();
@@ -136,6 +142,7 @@ public class AuthController {
         }
 
         // 카카오 프로필 정보를 바탕으로 MemberVO 객체 생성
+        String salt = encrypt.getSalt();
         MemberVO kakaoUser = MemberVO.builder()
                 .m_name(kakaoProfile.getProperties().getNickname())
                 .m_pw(cosKey)
@@ -152,6 +159,7 @@ public class AuthController {
         kmap.put("m_email", kakaoProfile.getKakao_account().getEmail());
         kmap.put("m_nickname", kakaoProfile.getProperties().getNickname());
         kmap.put("oauth", "kakao");
+        kmap.put("salt", salt);
 
         // DB에서 회원 이메일로 회원 정보 조회
         Map<String, Object> userInfo = memberLogic.getInfo(kmap);
@@ -175,17 +183,6 @@ public class AuthController {
             return processLogin(kmap, session, rab);
         }
     }
-/*        if (userInfo != null && !userInfo.isEmpty()) {
-            // 이메일이 기존 회원과 중복됨
-            // 사용자에게 이미 등록된 이메일임을 알리고, 계정 연동 또는 다른 이메일 사용을 선택하게 함
-            rab.addFlashAttribute("socialErrorMessage", "이미 등록되어 있는 이메일입니다.");
-            return "redirect:/member/login"; // 로그인 페이지 또는 적절한 페이지로 리다이렉트
-        } else {
-            // 새 회원으로 DB에 등록
-            memberLogic.memberInsert(kmap);
-        }*/
-
-
 
     @Value("${google.client.id}")
     private String googleClientId;
@@ -246,7 +243,7 @@ public class AuthController {
         // DB에서 회원 정보 조회
         Map<String, Object> googleEmail = new HashMap<>();
         googleEmail.put("m_email", email);
-
+        String salt = encrypt.getSalt();
         Map<String, Object> userInfo = memberLogic.getInfo(googleEmail);
 
         Map<String, Object> gmap = new HashMap<>();
@@ -255,6 +252,8 @@ public class AuthController {
         gmap.put("m_email", email);
         gmap.put("m_nickname", name);
         gmap.put("oauth", "google");
+        gmap.put("salt", salt);
+
 
         if (userInfo != null && !userInfo.isEmpty()) {
             Object oauth = userInfo.get("oauth");
@@ -295,14 +294,12 @@ public class AuthController {
             return "redirect:/book/main"; // 로그인 성공 페이지로 리다이렉트
         } else {
             // 로그인 실패 시, 오류 메시지 설정 및 로그인 폼 페이지로 리다이렉트
-            rab.addFlashAttribute("errorMessageLogin", "로그인 실패!");
+            rab.addFlashAttribute("errorMessageLogin", "로그인이 실패에요!");
             return "redirect:/member/login";
         }
     }
 
     // 자동 로그인 시 사용되는 키
-    // 개인정보 수정할 경우 비밀번호 재입력을 해야해서 필요하지만,
-    // 사용자는 알수가 없으므로 개선이 필요한 부분
     @Value("${cos.key}")
     private String cosKey;
 }
