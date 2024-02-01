@@ -195,16 +195,35 @@ public class MemberLogic {
 
     /**
      * 사용자의 비밀번호 일치 여부를 확인
-     * @param cPass 비밀번호 확인에 필요한 사용자 정보와 비밀번호
+     * @param pMap 비밀번호 확인에 필요한 사용자 정보와 비밀번호
      * @return 일치하면 1, 불일치하면 0
      */
-    public int checkPassword(Map<String, Object> cPass) {
+    public int checkPassword(Map<String, Object> pMap) {
         logger.info("비밀번호 체크 로직 호출!");
-        int result = -1;
-        result = memberDao.checkPassword(cPass);
-        logger.info("result!!!!!!!! : " + result);
-        return result;
+        // 사용자 정보 조회
+        Map<String, Object> userInfo = getInfo(pMap);
+        if (userInfo == null || userInfo.isEmpty()) {
+            return -1; // 사용자 정보가 없는 경우
+        }
+
+        // 사용자가 입력한 비밀번호
+        String inputPw = (String) pMap.get("m_pw");
+        // 데이터베이스에 저장된 솔트값
+        String userSalt = (String) userInfo.get("salt");
+        // 입력된 비밀번호와 저장된 솔트값을 합쳐서 암호화
+        String encryptedInputPw = encrypt.getEncrypt(inputPw, userSalt);
+
+        // 데이터베이스에 저장된 암호화된 비밀번호
+        String userPw = (String) userInfo.get("m_pw");
+
+        // 암호화된 입력 비밀번호와 저장된 비밀번호 비교
+        if (encryptedInputPw.equals(userPw)) {
+            return 1; // 비밀번호 일치
+        } else {
+            return 0; // 비밀번호 불일치
+        }
     }
+
 ////////////////////////////////////////////////////////////////////////////////////
     /**
      * 사용자 정보를 업데이트, 닉네임 중복 체크 후 업데이트를 진행
@@ -290,6 +309,16 @@ public class MemberLogic {
      */
     public int updatePassword(Map<String, Object> pMap) {
         int result = -1;
+        // 입력된 비밀번호
+        String pw = (String) pMap.get("m_pw");
+        // 솔트 생성
+        String salt = encrypt.getSalt();
+        String encrypt_pw = encrypt.getEncrypt(pw, salt);
+
+        // 암호화된 비밀번호와 솔트를 pMap에 다시 저장
+        pMap.put("m_pw", encrypt_pw);
+        pMap.put("salt", salt);
+
         result = memberDao.updatePassword(pMap);
         logger.info("result!!!!!!!!!!!!!"+result);
         return result;
